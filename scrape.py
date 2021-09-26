@@ -11,7 +11,7 @@ from flask_mail import Message
 import csv
 from datetime import date
 import datetime
-import io
+from io import BytesIO, StringIO
 import os
 import re
 import time
@@ -99,164 +99,168 @@ def get_kijiji_leads():
         {"name": "peterborough", "code": "c30349001l1700218"},
         {"name": "kamloops", "code": "c30349001l1700227"},
     ]
-    # for i in range(1,4):
-    #     for url in city_data:
-    #         print('scraping leads in: ', url['name'])
-    #         try:
-    #             if(url['name'] == 'etobicoke'):
-    #                 soup = BeautifulSoup(
-    #                 r.urlopen(f"https://www.kijiji.ca/b-for-rent/city-of-toronto/page-{i}/{url['code']}?ll=43.620495%2C-79.513198&address=Etobicoke%2C+Toronto%2C+ON&radius=7.0"),
-    #                 'html.parser',
-    #                 )
-    #                 all_properties.append('etobicoke')
-    #                 all_properties += soup.findAll("a", {"class": "title"})
-    #                 all_properties.append('')
-    #             elif(url['name'] == 'scarborough'):
-    #                 soup = BeautifulSoup(
-    #                     r.urlopen(f"https://www.kijiji.ca/b-for-rent/city-of-toronto/page-{i}/{url['code']}?ll=43.776426%2C-79.231752&address=Scarborough%2C+Toronto%2C+ON&radius=7.0"),
-    #                     'html.parser',
-    #                 )
-    #                 all_properties.append('scarborough')
-    #                 all_properties += soup.findAll("a", {"class": "title"})
-    #                 all_properties.append('')
-    #             elif(url['name'] == 'north-york'):
-    #                 soup = BeautifulSoup(
-    #                     r.urlopen(f"https://www.kijiji.ca/b-for-rent/city-of-toronto/page-{i}/{url['code']}?ll=43.761538%2C-79.411079&address=North+York%2C+Toronto%2C+ON&radius=7.0"),
-    #                     'html.parser',
-    #                 )
-    #                 all_properties.append('north-york')
-    #                 all_properties += soup.findAll("a", {"class": "title"})
-    #                 all_properties.append('')
-    #             elif(url['name'] == 'city-of-toronto'):
-    #                 soup = BeautifulSoup(
-    #                     r.urlopen(f"https://www.kijiji.ca/b-for-rent/city-of-toronto/page-{i}/{url['code']}?ll=43.653226%2C-79.383184&address=Toronto%2C+ON&radius=7.0"),
-    #                     'html.parser',
-    #                 )
-    #                 all_properties.append('city-of-toronto')
-    #                 all_properties += soup.findAll("a", {"class": "title"})
-    #                 all_properties.append('')
-    #             else:
-    #                 soup = BeautifulSoup(
-    #                     r.urlopen(f"https://www.kijiji.ca/b-for-rent/{url['name']}/page-{i}/{url['code']}"),
-    #                     'html.parser',
-    #                 )
-    #                 all_properties += soup.findAll("a", {"class": "title"})
-    #         except Exception as e:
-    #             print('this is what errored: ', e, url['name'], url['code'])
-    # region = None
-    # for i in range(len(all_properties)):
-    #     if all_properties[i] == 'etobicoke':
-    #         region = 'e'
-    #         continue
-    #     elif all_properties[i] == 'city-of-toronto':
-    #         region = 't'
-    #         continue
-    #     elif all_properties[i] == 'north-york':
-    #         region = 'n'
-    #         continue
-    #     elif all_properties[i] == 'scarborough':
-    #         region = 's'
-    #         continue
-    #     elif all_properties[i] == '':
-    #         region = None
-    #         continue
-    #     try:
-    #         lead = {
-    #             'numbers': [],
-    #             'url': f"https://www.kijiji.ca{all_properties[i]['href']}"
-    #         }
-    #         flag=False
-    #         while not flag:
-    #             soup = BeautifulSoup(r.urlopen(f"{lead['url']}?siteLocale=en_CA"), 'html.parser')
-    #             if len(soup.body) == 0:
-    #                 import time
-    #                 time.sleep(25)
-    #                 print("waiting...", i, lead['url'])
-    #             else:
-    #                 flag=True
-    #         if soup.find('div', {'class': 'titleAttributes-2381855425'}) != None:
-    #             lead['buildingType'] = soup.select('div.titleAttributes-2381855425')[0].find_all('li')[0].span.text
-    #         else:
-    #             lead['buildingType'] = None
-    #         if soup.find('div', {'class': 'titleAttributes-2381855425'}) != None:
-    #             lead['rooms'] = soup.select('div.titleAttributes-2381855425')[0].find_all('li')[1].span.text[-1]
-    #         elif soup.find('dt', string='Bedrooms') != None:
-    #             lead['rooms'] = soup.find('dt', string='Bedrooms').find_next('dd').find_next('dd').text[-1]
-    #         else:
-    #             lead['rooms'] = None
-    #         if soup.find('div', {'class': 'titleAttributes-2381855425'}) != None:
-    #             lead['baths'] = soup.select('div.titleAttributes-2381855425')[0].find_all('li')[2].span.text
-    #         elif soup.find('dt', string='Bathrooms') != None:
-    #             lead['baths'] = soup.find('dt', string='Bathrooms').find_next('dd').find_next('dd').text
-    #         else:
-    #             lead['baths'] = None
-    #         if soup.find('div', {'class': 'priceWrapper-1165431705'}) == None:
-    #             if soup.find('div', {'class': 'priceContainer-1419890179'}) == None:
-    #                 lead['rent'] = None
-    #             else:
-    #                 lead['rent'] = soup.find('div', {'class': 'priceContainer-1419890179'}).span.span.text.replace(".00", "")
-    #         else:
-    #             if soup.find('div', {'class': 'priceWrapper-1165431705'}).span.text != None:
-    #                 lead['rent'] = soup.find('div', {'class': 'priceWrapper-1165431705'}).span.text.replace(".00", "") 
-    #             elif soup.find('div', {'class': 'priceWrapper-1165431705'}).span.font != None:
-    #                 lead['rent'] = soup.find('div', {'class': 'priceWrapper-1165431705'}).span.font.font.text.replace(".00", "") 
-    #             else:
-    #                 lead['rent'] = None
-    #         if lead['rent'] != None:
-    #             lead['rent'] = lead['rent'].replace("$", "").replace(" ", "")
-    #             if lead['rent'][-3:] == ",00":
-    #                 lead['rent'] = lead['rent'][:-3]
-    #             lead['rent'] = lead['rent'].replace(",", "").replace(" ", "").replace(u'\xa0', "")
-    #             if lead['rent'].isdigit(): lead['rent'] = int(lead['rent'])
-    #             else: lead['rent'] = None
-    #         if soup.find('div', {'class': 'locationContainer-2867112055'}) != None:
-    #             lead['address'] = soup.find('div', {'class': 'locationContainer-2867112055'}).span.text
-    #         else:
-    #             lead['address'] = None
-    #         lead['inserted_at'] = datetime.datetime.utcnow()
-    #         if soup.find('div', {'class': 'descriptionContainer-3261352004'}).div != None:
-    #             description = soup.find('div', {'class': 'descriptionContainer-3261352004'}).div
-    #             split = [re.sub('[\)\(\-]', '', i) for i in re.sub('[<\>\.]', ' ', str(description)).split()]
-    #         else:
-    #             description = []
-    #         if(region == 'e'): 
-    #             lead['city'] = 'etobicoke'
-    #         elif(region == 's'): 
-    #             lead['city'] = 'scarborough'
-    #         elif(region == 'n'): 
-    #             lead['city'] = 'north-york'
-    #         elif(region == 't'): 
-    #             lead['city'] = 'city-of-toronto'
-    #         else: 
-    #             lead['city'] = lead['url'].split('/')[4]
+    for i in range(1,4):
+        for url in city_data:
+            print('scraping leads in: ', url['name'])
+            try:
+                if(url['name'] == 'etobicoke'):
+                    soup = BeautifulSoup(
+                    r.urlopen(f"https://www.kijiji.ca/b-for-rent/city-of-toronto/page-{i}/{url['code']}?ll=43.620495%2C-79.513198&address=Etobicoke%2C+Toronto%2C+ON&radius=7.0"),
+                    'html.parser',
+                    )
+                    all_properties.append('etobicoke')
+                    all_properties += soup.findAll("a", {"class": "title"})
+                    all_properties.append('')
+                elif(url['name'] == 'scarborough'):
+                    soup = BeautifulSoup(
+                        r.urlopen(f"https://www.kijiji.ca/b-for-rent/city-of-toronto/page-{i}/{url['code']}?ll=43.776426%2C-79.231752&address=Scarborough%2C+Toronto%2C+ON&radius=7.0"),
+                        'html.parser',
+                    )
+                    all_properties.append('scarborough')
+                    all_properties += soup.findAll("a", {"class": "title"})
+                    all_properties.append('')
+                elif(url['name'] == 'north-york'):
+                    soup = BeautifulSoup(
+                        r.urlopen(f"https://www.kijiji.ca/b-for-rent/city-of-toronto/page-{i}/{url['code']}?ll=43.761538%2C-79.411079&address=North+York%2C+Toronto%2C+ON&radius=7.0"),
+                        'html.parser',
+                    )
+                    all_properties.append('north-york')
+                    all_properties += soup.findAll("a", {"class": "title"})
+                    all_properties.append('')
+                elif(url['name'] == 'city-of-toronto'):
+                    soup = BeautifulSoup(
+                        r.urlopen(f"https://www.kijiji.ca/b-for-rent/city-of-toronto/page-{i}/{url['code']}?ll=43.653226%2C-79.383184&address=Toronto%2C+ON&radius=7.0"),
+                        'html.parser',
+                    )
+                    all_properties.append('city-of-toronto')
+                    all_properties += soup.findAll("a", {"class": "title"})
+                    all_properties.append('')
+                else:
+                    soup = BeautifulSoup(
+                        r.urlopen(f"https://www.kijiji.ca/b-for-rent/{url['name']}/page-{i}/{url['code']}"),
+                        'html.parser',
+                    )
+                    all_properties += soup.findAll("a", {"class": "title"})
+            except Exception as e:
+                print('this is what errored: ', e, url['name'], url['code'])
+    region = None
+    for i in range(len(all_properties)):
+        if all_properties[i] == 'etobicoke':
+            region = 'e'
+            continue
+        elif all_properties[i] == 'city-of-toronto':
+            region = 't'
+            continue
+        elif all_properties[i] == 'north-york':
+            region = 'n'
+            continue
+        elif all_properties[i] == 'scarborough':
+            region = 's'
+            continue
+        elif all_properties[i] == '':
+            region = None
+            continue
+        try:
+            lead = {
+                'numbers': [],
+                'url': f"https://www.kijiji.ca{all_properties[i]['href']}"
+            }
+            flag=False
+            while not flag:
+                soup = BeautifulSoup(r.urlopen(f"{lead['url']}?siteLocale=en_CA"), 'html.parser')
+                if len(soup.body) == 0:
+                    import time
+                    time.sleep(25)
+                    print("waiting...", i, lead['url'])
+                else:
+                    flag=True
+            if soup.find('div', {'class': 'titleAttributes-2381855425'}) != None:
+                lead['buildingType'] = soup.select('div.titleAttributes-2381855425')[0].find_all('li')[0].span.text
+            else:
+                lead['buildingType'] = None
+            if soup.find('div', {'class': 'titleAttributes-2381855425'}) != None:
+                lead['rooms'] = soup.select('div.titleAttributes-2381855425')[0].find_all('li')[1].span.text[-1]
+            elif soup.find('dt', string='Bedrooms') != None:
+                lead['rooms'] = soup.find('dt', string='Bedrooms').find_next('dd').find_next('dd').text[-1]
+            else:
+                lead['rooms'] = None
+            if soup.find('div', {'class': 'titleAttributes-2381855425'}) != None:
+                lead['baths'] = soup.select('div.titleAttributes-2381855425')[0].find_all('li')[2].span.text
+            elif soup.find('dt', string='Bathrooms') != None:
+                lead['baths'] = soup.find('dt', string='Bathrooms').find_next('dd').find_next('dd').text
+            else:
+                lead['baths'] = None
+            if soup.find('div', {'class': 'priceWrapper-1165431705'}) == None:
+                if soup.find('div', {'class': 'priceContainer-1419890179'}) == None:
+                    lead['rent'] = None
+                else:
+                    lead['rent'] = soup.find('div', {'class': 'priceContainer-1419890179'}).span.span.text.replace(".00", "")
+            else:
+                if soup.find('div', {'class': 'priceWrapper-1165431705'}).span.text != None:
+                    lead['rent'] = soup.find('div', {'class': 'priceWrapper-1165431705'}).span.text.replace(".00", "") 
+                elif soup.find('div', {'class': 'priceWrapper-1165431705'}).span.font != None:
+                    lead['rent'] = soup.find('div', {'class': 'priceWrapper-1165431705'}).span.font.font.text.replace(".00", "") 
+                else:
+                    lead['rent'] = None
+            if lead['rent'] != None:
+                lead['rent'] = lead['rent'].replace("$", "").replace(" ", "")
+                if lead['rent'][-3:] == ",00":
+                    lead['rent'] = lead['rent'][:-3]
+                lead['rent'] = lead['rent'].replace(",", "").replace(" ", "").replace(u'\xa0', "")
+                if lead['rent'].isdigit(): lead['rent'] = int(lead['rent'])
+                else: lead['rent'] = None
+            if soup.find('div', {'class': 'locationContainer-2867112055'}) != None:
+                lead['address'] = soup.find('div', {'class': 'locationContainer-2867112055'}).span.text
+            else:
+                lead['address'] = None
+            lead['inserted_at'] = datetime.datetime.utcnow()
+            if soup.find('div', {'class': 'descriptionContainer-3261352004'}).div != None:
+                description = soup.find('div', {'class': 'descriptionContainer-3261352004'}).div
+                split = [re.sub('[\)\(\-]', '', i) for i in re.sub('[<\>\.]', ' ', str(description)).split()]
+            else:
+                description = []
+            if(region == 'e'): 
+                lead['city'] = 'etobicoke'
+            elif(region == 's'): 
+                lead['city'] = 'scarborough'
+            elif(region == 'n'): 
+                lead['city'] = 'north-york'
+            elif(region == 't'): 
+                lead['city'] = 'city-of-toronto'
+            else: 
+                lead['city'] = lead['url'].split('/')[4]
             
-    #         if len(soup.find_all('div', {'class': 'attributeCard-1535740193'})) > 1:
-    #             lead['square_feet'] = soup.find_all('div', {'class': 'attributeCard-1535740193'})[1].ul.find_all('li')[0].dl.dd.text
-    #             lead['square_feet'] = lead['square_feet'].replace(',', '').replace(' ', '').replace('.', '')
-    #             if lead['square_feet'] == '1' or not lead['square_feet'].isdigit():
-    #                 lead['square_feet'] = None
-    #         else:
-    #             lead['square_feet'] = None
-    #     except Exception as e:
-    #         print("The error was:", e)
-    #         print('this is what errored:', all_properties[i], i)
+            if len(soup.find_all('div', {'class': 'attributeCard-1535740193'})) > 1:
+                lead['square_feet'] = soup.find_all('div', {'class': 'attributeCard-1535740193'})[1].ul.find_all('li')[0].dl.dd.text
+                lead['square_feet'] = lead['square_feet'].replace(',', '').replace(' ', '').replace('.', '')
+                if lead['square_feet'] == '1' or not lead['square_feet'].isdigit():
+                    lead['square_feet'] = None
+            else:
+                lead['square_feet'] = None
+        except Exception as e:
+            print("The error was:", e)
+            print('this is what errored:', all_properties[i], i)
     leads = [{'city': 'Toronto', 'Address': '123 gay st', 'url':'https://www.google.com', 'rooms': 4, 'rent': 1234, 'buildingType':'House', 'square_feet': 123, 'inserted_at':datetime.datetime.utcnow()}]
     csv_detailed_leads = create_csv(
         ['city', 'Address', 'Url', 'Rooms', 'Price', 'Building Type', 'Square Feet', 'Inserted at'],
         [[i['city'], i.get('address'), i['url'], i['rooms'], i['rent'], i['buildingType'], i['square_feet'], i['inserted_at']] for i in leads if i['rooms'] and i['rent'] and i['buildingType'] and i['square_feet']]
     )
     todays_date = date.today().strftime("%d/%m/%Y")
+    csvfile = StringIO()
+    csvwriter = csv.writer(csvfile)
+    for i in csv_detailed_leads:
+        csvwriter.writerow(i)
     with app.app.app_context():
         msg = Message(
-            f"Singlekey Kijiji Sales Leads for {todays_date}",
-            sender=os.environ['GMAIL_ACCOUNT'],
-            recipients=['seb7wake@gmail.com'],
-        )
+                f"Singlekey Kijiji Sales Leads for {todays_date}",
+                sender=os.environ['GMAIL_ACCOUNT'],
+                recipients=['seb7wake@gmail.com'],
+            )
         msg.attach(
-            f"detailed_leads_for_{todays_date}.csv", "text/csv", csv_detailed_leads.getvalue()
-        )
-        print('email to dev team')
+                f"detailed_leads_for_{todays_date}.csv", "text/csv", csv_detailed_leads.getvalue()
+            )
         app.mail.send(msg)
+    print('email to dev team')
 
 def get_padmapper_leads():
     leads = []
@@ -318,130 +322,121 @@ def get_padmapper_leads():
         except:
             print('No listings were found in this city')
         for i in range(len(all_properties)):
-            if app.models.SalesLead.query.filter_by(
-                url=f"https://www.padmapper.com{all_properties[i]['href']}",
-            ).one_or_none():
-                continue
-            else:
-                lead = {
-                    'url': f"https://www.padmapper.com{all_properties[i]['href']}",
-                }
-                try:
-                    soup = BeautifulSoup(r.urlopen(lead['url']), 'html.parser')
-                    if soup.find('div', {'class': 'col BubbleDetail_colSummaryIcon__7_KKM'}) != None:
-                        lead['address'] = soup.find('div', {'class', 'col BubbleDetail_colAddress__SsF9D'}).h1.span.text.split(u'\xa0')[0]
-                        lead['rooms'] = soup.find_all('div', {'class': 'BubbleDetail_imageText__33oD_'})[0].text[0]
-                        lead['rent'] = soup.find('div', {'class': 'col BubbleDetail_colPrice__2mVzj'}).text.replace('$', '').replace(',', '')
-                        if not lead['rent'].isdigit(): lead['rent'] = None
-                        lead['baths'] = soup.find_all('div', {'class': 'BubbleDetail_imageText__33oD_'})[1].text[0]
-                        if not lead['baths'].isdigit():
-                            lead['baths'] = None
-                        if soup.find_all('div', {'class': 'BubbleDetail_imageText__33oD_'})[4].text.isdigit():
-                            lead['square_feet'] = soup.find_all('div', {'class': 'BubbleDetail_imageText__33oD_'})[4].text.split(' ')[0].replace(',', '').replace('.', '')
-                        else:
-                            lead['square_feet'] = None
-                    elif soup.find('div', {'class': 'Floorplan_floorplansContainer__2Rtwg'}) != None:
-                        if len(soup.find_all('div', {'class': 'Floorplan_floorplansContainer__2Rtwg'})) > 1:
-                            for k in range(len(soup.find('div', {'class': 'Floorplan_floorplansContainer__2Rtwg'}))):
-                                lead = {
-                                    'url': f"https://www.padmapper.com{all_properties[i]['href']}",
-                                }
-                                lead['address'] = soup.find('h1', {'class', 'FullDetail_street__zq-XK'}).text.split(u'\xa0')[0]
-                                lead['rooms'] = soup.find_all('div', {'class': 'Floorplan_title__179XB'})[k].text[0]
-                                if not lead['rooms'].isdigit(): lead['rooms'] = None
-                                if soup.find_all('div', {'class': 'Floorplan_floorplanPanel__25nE5'})[k].find_all('div')[0].find_all('div')[1].text == 'UNAVAILABLE': continue
-                                lead['square_feet'] = None
-                                lead['baths'] = None
-                                if soup.find_all('div', {'class': 'Floorplan_title__179XB'}) != None:
-                                    lead['rent'] = soup.find_all('div', {'class': 'Floorplan_priceRange__x-BQo'})[k].span.text.replace('$', '').replace(',', '')
-                                else:
-                                    lead['rent'] = None
-                                if lead['rent'] != None: 
-                                    lead['rent'] = lead['rent'].replace(b'\xe2\x80\x94'.decode('utf-8'), ' ')
-                                    if ' ' in lead['rent']:
-                                        rents = lead['rent'].split(' ')
-                                        lead['rent'] = math.ceil((int(rents[0])+int(rents[1]))/2)  
-                                    else:
-                                        if not lead['rent'].isdigit():lead['rent'] = None
-                                lead['buildingType'] = 'Apartment'
-                                lead['inserted_at'] = datetime.datetime.utcnow()
-                                lead['numbers'] = ''
-                                if(city[0].isupper()):
-                                    if city[0] == 'T': lead['city'] = 'city-of-toronto'
-                                    elif city[0] == 'E': lead['city'] = 'etobicoke'
-                                    elif city[0] == 'S': lead['city'] = 'scarborough'
-                                    elif city[0] == 'N': lead['city'] = 'north-york'
-                                else:
-                                    lead['city'] = city.split('?')[0].split('/')[-1]
-                                leads.append(lead)
-                                db_insert_lead(lead)
-                            continue
-                        else:
+            lead = {
+                'url': f"https://www.padmapper.com{all_properties[i]['href']}",
+            }
+            try:
+                soup = BeautifulSoup(r.urlopen(lead['url']), 'html.parser')
+                if soup.find('div', {'class': 'col BubbleDetail_colSummaryIcon__7_KKM'}) != None:
+                    lead['address'] = soup.find('div', {'class', 'col BubbleDetail_colAddress__SsF9D'}).h1.span.text.split(u'\xa0')[0]
+                    lead['rooms'] = soup.find_all('div', {'class': 'BubbleDetail_imageText__33oD_'})[0].text[0]
+                    lead['rent'] = soup.find('div', {'class': 'col BubbleDetail_colPrice__2mVzj'}).text.replace('$', '').replace(',', '')
+                    if not lead['rent'].isdigit(): lead['rent'] = None
+                    lead['baths'] = soup.find_all('div', {'class': 'BubbleDetail_imageText__33oD_'})[1].text[0]
+                    if not lead['baths'].isdigit():
+                        lead['baths'] = None
+                    if soup.find_all('div', {'class': 'BubbleDetail_imageText__33oD_'})[4].text.isdigit():
+                        lead['square_feet'] = soup.find_all('div', {'class': 'BubbleDetail_imageText__33oD_'})[4].text.split(' ')[0].replace(',', '').replace('.', '')
+                    else:
+                        lead['square_feet'] = None
+                elif soup.find('div', {'class': 'Floorplan_floorplansContainer__2Rtwg'}) != None:
+                    if len(soup.find_all('div', {'class': 'Floorplan_floorplansContainer__2Rtwg'})) > 1:
+                        for k in range(len(soup.find('div', {'class': 'Floorplan_floorplansContainer__2Rtwg'}))):
+                            lead = {
+                                'url': f"https://www.padmapper.com{all_properties[i]['href']}",
+                            }
                             lead['address'] = soup.find('h1', {'class', 'FullDetail_street__zq-XK'}).text.split(u'\xa0')[0]
-                            lead['rooms'] = soup.find_all('div', {'class': 'Floorplan_title__179XB'})[0].text[0]
+                            lead['rooms'] = soup.find_all('div', {'class': 'Floorplan_title__179XB'})[k].text[0]
                             if not lead['rooms'].isdigit(): lead['rooms'] = None
+                            if soup.find_all('div', {'class': 'Floorplan_floorplanPanel__25nE5'})[k].find_all('div')[0].find_all('div')[1].text == 'UNAVAILABLE': continue
                             lead['square_feet'] = None
-                            if not lead['square_feet'].isdigit(): lead['square_feet'] = None
                             lead['baths'] = None
                             if soup.find_all('div', {'class': 'Floorplan_title__179XB'}) != None:
-                                lead['rent'] = soup.find_all('div', {'class': 'Floorplan_priceRange__x-BQo'})[0].span.text.replace('$', '').replace(',', '')
+                                lead['rent'] = soup.find_all('div', {'class': 'Floorplan_priceRange__x-BQo'})[k].span.text.replace('$', '').replace(',', '')
                             else:
                                 lead['rent'] = None
                             if lead['rent'] != None: 
                                 lead['rent'] = lead['rent'].replace(b'\xe2\x80\x94'.decode('utf-8'), ' ')
                                 if ' ' in lead['rent']:
                                     rents = lead['rent'].split(' ')
-                                    lead['rent'] = math.ceil((int(rents[0])+int(rents[1]))/2)   
+                                    lead['rent'] = math.ceil((int(rents[0])+int(rents[1]))/2)  
                                 else:
-                                    if not lead['rent'].isdigit():lead['rent'] = None                 
+                                    if not lead['rent'].isdigit():lead['rent'] = None
+                            lead['buildingType'] = 'Apartment'
+                            lead['inserted_at'] = datetime.datetime.utcnow()
+                            lead['numbers'] = ''
+                            if(city[0].isupper()):
+                                if city[0] == 'T': lead['city'] = 'city-of-toronto'
+                                elif city[0] == 'E': lead['city'] = 'etobicoke'
+                                elif city[0] == 'S': lead['city'] = 'scarborough'
+                                elif city[0] == 'N': lead['city'] = 'north-york'
+                            else:
+                                lead['city'] = city.split('?')[0].split('/')[-1]
+                            leads.append(lead)
+                        continue
                     else:
                         lead['address'] = soup.find('h1', {'class', 'FullDetail_street__zq-XK'}).text.split(u'\xa0')[0]
-                        lead['rooms'] = soup.find('div', {'class': 'SummaryTable_summaryTable__3zCmu'}).ul.find_all('li')[1].div.span.text[0]
+                        lead['rooms'] = soup.find_all('div', {'class': 'Floorplan_title__179XB'})[0].text[0]
                         if not lead['rooms'].isdigit(): lead['rooms'] = None
-                        lead['rent'] = soup.find('div', {'class': 'SummaryTable_summaryTable__3zCmu'}).ul.find_all('li')[0].div.text.replace('$', '').replace(',', '')
+                        lead['square_feet'] = None
+                        if not lead['square_feet'].isdigit(): lead['square_feet'] = None
+                        lead['baths'] = None
+                        if soup.find_all('div', {'class': 'Floorplan_title__179XB'}) != None:
+                            lead['rent'] = soup.find_all('div', {'class': 'Floorplan_priceRange__x-BQo'})[0].span.text.replace('$', '').replace(',', '')
+                        else:
+                            lead['rent'] = None
                         if lead['rent'] != None: 
                             lead['rent'] = lead['rent'].replace(b'\xe2\x80\x94'.decode('utf-8'), ' ')
                             if ' ' in lead['rent']:
                                 rents = lead['rent'].split(' ')
-                                lead['rent'] = math.ceil((int(rents[0])+int(rents[1]))/2)
+                                lead['rent'] = math.ceil((int(rents[0])+int(rents[1]))/2)   
                             else:
-                                if not lead['rent'].isdigit():lead['rent'] = None
-                        lead['baths'] = soup.find('div', {'class': 'SummaryTable_summaryTable__3zCmu'}).ul.find_all('li')[2].div.text[0]
-                        if not lead['baths'].isdigit(): lead['baths'] = None
-                        lead['square_feet'] = soup.find('div', {'class': 'SummaryTable_summaryTable__3zCmu'}).ul.find_all('li')[4].div.text.split(' ')[0].replace(',', '').replace('.', '')
-                        if not lead['square_feet'].isdigit(): lead['square_feet'] = None
-                    lead['buildingType'] = 'Apartment'
-                    lead['inserted_at'] = datetime.datetime.utcnow()
-                    lead['numbers'] = ''
-                    if(city[0].isupper()):
-                        if city[0] == 'T': lead['city'] = 'city-of-toronto'
-                        elif city[0] == 'E': lead['city'] = 'etobicoke'
-                        elif city[0] == 'S': lead['city'] = 'scarborough'
-                        elif city[0] == 'N': lead['city'] = 'north-york'
-                    else:
-                        lead['city'] = city.split('?')[0].split('/')[-1]
-                    leads.append(lead)
-                except Exception as e:
-                    print("Error: ", e)
-                    print(lead['url'])
-    res = {
-        'leads': leads,
-    }
+                                if not lead['rent'].isdigit():lead['rent'] = None                 
+                else:
+                    lead['address'] = soup.find('h1', {'class', 'FullDetail_street__zq-XK'}).text.split(u'\xa0')[0]
+                    lead['rooms'] = soup.find('div', {'class': 'SummaryTable_summaryTable__3zCmu'}).ul.find_all('li')[1].div.span.text[0]
+                    if not lead['rooms'].isdigit(): lead['rooms'] = None
+                    lead['rent'] = soup.find('div', {'class': 'SummaryTable_summaryTable__3zCmu'}).ul.find_all('li')[0].div.text.replace('$', '').replace(',', '')
+                    if lead['rent'] != None: 
+                        lead['rent'] = lead['rent'].replace(b'\xe2\x80\x94'.decode('utf-8'), ' ')
+                        if ' ' in lead['rent']:
+                            rents = lead['rent'].split(' ')
+                            lead['rent'] = math.ceil((int(rents[0])+int(rents[1]))/2)
+                        else:
+                            if not lead['rent'].isdigit():lead['rent'] = None
+                    lead['baths'] = soup.find('div', {'class': 'SummaryTable_summaryTable__3zCmu'}).ul.find_all('li')[2].div.text[0]
+                    if not lead['baths'].isdigit(): lead['baths'] = None
+                    lead['square_feet'] = soup.find('div', {'class': 'SummaryTable_summaryTable__3zCmu'}).ul.find_all('li')[4].div.text.split(' ')[0].replace(',', '').replace('.', '')
+                    if not lead['square_feet'].isdigit(): lead['square_feet'] = None
+                lead['buildingType'] = 'Apartment'
+                lead['inserted_at'] = datetime.datetime.utcnow()
+                lead['numbers'] = ''
+                if(city[0].isupper()):
+                    if city[0] == 'T': lead['city'] = 'city-of-toronto'
+                    elif city[0] == 'E': lead['city'] = 'etobicoke'
+                    elif city[0] == 'S': lead['city'] = 'scarborough'
+                    elif city[0] == 'N': lead['city'] = 'north-york'
+                else:
+                    lead['city'] = city.split('?')[0].split('/')[-1]
+                leads.append(lead)
+            except Exception as e:
+                print("Error: ", e)
+                print(lead['url'])
     csv_detailed_leads = create_csv(
         ['city', 'Address', 'Url', 'Rooms', 'Price', 'Building Type', 'Square Feet', 'Inserted at'],
-        [[i['city'], i.get('address'), i['url'], i['rooms'], i['rent'], i['buildingType'], i['square_feet'], i['inserted_at']] for i in res['leads'] if i['rooms'] and i['rent'] and i['buildingType']]
+        [[i['city'], i.get('address'), i['url'], i['rooms'], i['rent'], i['buildingType'], i['square_feet'], i['inserted_at']] for i in leads if i['rooms'] and i['rent'] and i['buildingType']]
     )
     todays_date = date.today().strftime("%d/%m/%Y")
     with app.app.app_context():
         msg = Message(
-            f"Singlekey Padmapper Sales Leads for {todays_date}",
-            sender=os.environ['GMAIL_ACCOUNT'],
-            recipients=['seb7wake@gmail.com'],
-        )
+                f"Singlekey Kijiji Sales Leads for {todays_date}",
+                sender=os.environ['GMAIL_ACCOUNT'],
+                recipients=['seb7wake@gmail.com'],
+            )
         msg.attach(
-            f"detailed_leads_for_{todays_date}.csv", "text/csv", csv_detailed_leads.getvalue()
-        )
-        print('email to sk dev team')
+                f"detailed_leads_for_{todays_date}.csv", "text/csv", csv_detailed_leads.getvalue()
+            )
         app.mail.send(msg)
+    print('email to sk dev team')
 get_kijiji_leads()
 get_padmapper_leads()
